@@ -1,0 +1,33 @@
+```yaml
+name: Setup Project Structure
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Create Directories
+      run: |
+        mkdir -p uploads
+        mkdir -p signed-ipas
+        mkdir -p temp
+        mkdir -p public
+        touch uploads/.gitkeep
+        touch signed-ipas/.gitkeep
+        touch temp/.gitkeep
+        touch public/.gitkeep
+    
+    - name: Commit Directory Structure
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Setup project directory structure" || echo "No changes to commit"
+        git push
+```
