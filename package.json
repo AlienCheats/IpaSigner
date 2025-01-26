@@ -1,0 +1,17 @@
+```json
+{
+  "name": "ipa-signer",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "multer": "^1.4.2",
+    "fs-extra": "^10.0.0",
+    "cors": "^2.8.5"
+  }
+}
+```
