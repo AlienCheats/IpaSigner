@@ -1,4 +1,4 @@
-```yaml
+
 name: Setup Project Structure
 
 on:
@@ -30,4 +30,4 @@ jobs:
         git add .
         git commit -m "Setup project directory structure" || echo "No changes to commit"
         git push
-```
+
