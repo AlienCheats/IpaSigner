@@ -1,7 +1,8 @@
 import express from 'express';
 import multer from 'multer';
-import cors from 'cors';
+import fs from 'fs-extra';
 import path from 'path';
+import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -10,25 +11,35 @@ const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.static('public'));
+// Increase limits substantially for large IPAs
+app.use(express.json({ limit: '2000mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2000mb' }));
 
-// Serve static files
-app.use(express.static('public'));  // if your frontend files are in a 'public' folder
-// or
-app.use(express.static('.'));  // if your frontend files are in the root directory
-
-// Add this route to serve your index.html
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads';
+        fs.ensureDirSync(uploadDir);
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 
-const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
     limits: {
-        fileSize: 500 * 1024 * 1024
+        fileSize: 2000 * 1024 * 1024  // 2GB limit to handle large IPAs
     }
 });
+
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
+const OUTPUT_DIR = path.join(__dirname, 'signed-ipas');
+const TEMP_DIR = path.join(__dirname, 'temp');
+
+fs.ensureDirSync(OUTPUT_DIR);
+fs.ensureDirSync(TEMP_DIR);
 
 app.post('/api/sign-ipa', upload.fields([
     { name: 'ipa', maxCount: 1 },
@@ -43,8 +54,7 @@ app.post('/api/sign-ipa', upload.fields([
         console.log('Files received:', req.files);
         console.log('Password received:', req.body.p12Password);
 
-        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-        const testInstallUrl = `itms-services://?action=download-manifest&url=${baseUrl}/signed-ipas/manifest.plist`;
+        const testInstallUrl = `itms-services://?action=download-manifest&url=${SERVER_URL}/signed-ipas/manifest.plist`;
         
         res.json({
             success: true,
@@ -60,4 +70,7 @@ app.post('/api/sign-ipa', upload.fields([
     }
 });
 
-export default app;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
