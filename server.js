@@ -13,9 +13,9 @@ const app = express();
 app.use(cors());
 app.use(express.static('public'));
 
-// Increase the limits to handle 8.75MB file
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+// Increase the limits to handle any size IPA file
+app.use(express.json({ limit: '0' }));
+app.use(express.urlencoded({ extended: true, limit: '0' }));
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage: storage,
     limits: {
-        fileSize: 20 * 1024 * 1024  // 20MB limit to handle your 8.75MB file
+        fileSize: 0  // No file size limit
     }
 });
 
@@ -54,6 +54,8 @@ app.post('/api/sign-ipa', upload.fields([
 
         console.log('Files received:', req.files);
         console.log('Password received:', req.body.p12Password);
+
+        // Perform your IPA signing logic here
 
         const testInstallUrl = `itms-services://?action=download-manifest&url=${SERVER_URL}/signed-ipas/manifest.plist`;
         
