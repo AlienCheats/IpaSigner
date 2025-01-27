@@ -1,12 +1,27 @@
 import express from 'express';
 import multer from 'multer';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// For Vercel, we need to use memory storage instead of disk storage
+// Serve static files
+app.use(express.static('public'));  // if your frontend files are in a 'public' folder
+// or
+app.use(express.static('.'));  // if your frontend files are in the root directory
+
+// Add this route to serve your index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -28,7 +43,6 @@ app.post('/api/sign-ipa', upload.fields([
         console.log('Files received:', req.files);
         console.log('Password received:', req.body.p12Password);
 
-        // Generate dynamic URL based on deployment URL
         const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
         const testInstallUrl = `itms-services://?action=download-manifest&url=${baseUrl}/signed-ipas/manifest.plist`;
         
@@ -46,5 +60,4 @@ app.post('/api/sign-ipa', upload.fields([
     }
 });
 
-// Remove app.listen for Vercel
 export default app;
