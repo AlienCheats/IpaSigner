@@ -1,4 +1,4 @@
-```javascript
+
 import express from 'express';
 import multer from 'multer';
 import fs from 'fs-extra';
@@ -74,4 +74,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
-```
+
