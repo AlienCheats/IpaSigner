@@ -12,9 +12,10 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(cors());
 app.use(express.static('public'));
-// Increase limits substantially for large IPAs
-app.use(express.json({ limit: '2000mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2000mb' }));
+
+// Increase the limits to handle 8.75MB file
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -30,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage: storage,
     limits: {
-        fileSize: 2000 * 1024 * 1024  // 2GB limit to handle large IPAs
+        fileSize: 20 * 1024 * 1024  // 20MB limit to handle your 8.75MB file
     }
 });
 
