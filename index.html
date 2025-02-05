@@ -1,9 +1,9 @@
-
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>iOS IPA Signer</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS IPA Signer</title>
     <style>
         * {
             box-sizing: border-box;
@@ -16,7 +16,6 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
             background-color: #1a1a1a;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
@@ -292,128 +291,85 @@
             signButton.disabled = !(files.ipa && files.p12 && files.provision && password);
         }
 
-        function showCopyNotification() {
-            const notification = document.getElementById('copyNotification');
-            notification.style.display = 'block';
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 2000);
-        }
+        document.getElementById('ipa').addEventListener('change', function() {
+            files.ipa = this.files[0];
+            updateFileInfo('ipa', files.ipa);
+            updateUploadLabel(this, 'Drop IPA file or click to upload');
+            updateSignButton();
+        });
 
-        async function copyToClipboard(text) {
-            try {
-                await navigator.clipboard.writeText(text);
-                showCopyNotification();
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-            }
-        }
+        document.getElementById('p12').addEventListener('change', function() {
+            files.p12 = this.files[0];
+            updateFileInfo('p12', files.p12);
+            updateUploadLabel(this, 'Drop P12 file or click to upload');
+            updateSignButton();
+        });
 
-        function updateProgress(percent) {
-            const progressBar = document.getElementById('progressBar');
-            const progressBarFill = document.getElementById('progressBarFill');
-            progressBar.style.display = 'block';
-            progressBarFill.style.width = `${percent}%`;
-        }
-
-        ['ipa', 'p12', 'provision'].forEach(fileType => {
-            const input = document.getElementById(fileType);
-            const defaultText = input.parentElement.querySelector('.upload-label').textContent;
-            
-            input.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    files[fileType] = file;
-                    updateFileInfo(fileType, file);
-                    updateUploadLabel(this, defaultText);
-                } else {
-                    files[fileType] = null;
-                    updateFileInfo(fileType, null);
-                    updateUploadLabel(this, defaultText);
-                }
-                updateSignButton();
-            });
-
-            // Drag and drop handling
-            const container = input.parentElement;
-            
-            container.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                container.style.borderColor = '#007AFF';
-                container.style.backgroundColor = '#161616';
-            });
-
-            container.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                container.style.borderColor = '#333';
-                container.style.backgroundColor = '#111';
-            });
-
-            container.addEventListener('drop', (e) => {
-                e.preventDefault();
-                container.style.borderColor = '#333';
-                container.style.backgroundColor = '#111';
-                
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                    const input = container.querySelector('input[type="file"]');
-                    input.files = e.dataTransfer.files;
-                    files[fileType] = file;
-                    updateFileInfo(fileType, file);
-                    updateUploadLabel(input, defaultText);
-                    updateSignButton();
-                }
-            });
+        document.getElementById('provision').addEventListener('change', function() {
+            files.provision = this.files[0];
+            updateFileInfo('provision', files.provision);
+            updateUploadLabel(this, 'Drop provisioning profile or click to upload');
+            updateSignButton();
         });
 
         document.getElementById('p12Password').addEventListener('input', updateSignButton);
 
         document.getElementById('signButton').addEventListener('click', async function() {
             const statusDiv = document.getElementById('status');
-            const installLinkDiv = document.getElementById('installLink');
+            const installLink = document.getElementById('installLink');
             const progressBar = document.getElementById('progressBar');
-            
-            statusDiv.textContent = 'Signing IPA...';
-            statusDiv.className = 'status';
-            installLinkDiv.style.display = 'none';
-            progressBar.style.display = 'block';
-            
-            try {
-                const formData = new FormData();
-                formData.append('ipa', files.ipa);
-                formData.append('p12', files.p12);
-                formData.append('provision', files.provision);
-                formData.append('p12Password', document.getElementById('p12Password').value);
+            const progressBarFill = document.getElementById('progressBarFill');
+            const copyNotification = document.getElementById('copyNotification');
 
-                updateProgress(0);
-                
+            statusDiv.textContent = '';
+            installLink.textContent = '';
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '0%';
+
+            const formData = new FormData();
+            formData.append('ipa', files.ipa);
+            formData.append('p12', files.p12);
+            formData.append('provision', files.provision);
+            formData.append('p12Password', document.getElementById('p12Password').value);
+
+            try {
                 const response = await fetch('/api/sign-ipa', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error('Failed to sign IPA');
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    updateProgress(100);
+                const data = await response.json();
+                if (data.success) {
+                    installLink.textContent = `Download your signed IPA: ${data.installUrl}`;
+                    installLink.style.display = 'block';
+                    statusDiv.className = 'status success';
                     statusDiv.textContent = 'IPA signed successfully!';
-                    statusDiv.classList.add('success');
-                    
-                    installLinkDiv.textContent = result.installUrl;
-                    installLinkDiv.style.display = 'block';
-                    await copyToClipboard(result.installUrl);
+                    installLink.href = data.installUrl;
+                    installLink.target = '_blank';
+
+                    // Simulate progress
+                    for (let i = 0; i <= 100; i++) {
+                        setTimeout(() => {
+                            progressBarFill.style.width = `${i}%`;
+                        }, i * 20);
+                    }
                 } else {
-                    throw new Error(result.error || 'Signing failed');
+                    throw new Error(data.error || 'Unknown error');
                 }
-                
             } catch (error) {
-                updateProgress(0);
-                statusDiv.textContent = 'Error signing IPA: ' + error.message;
-                statusDiv.classList.add('error');
+                statusDiv.className = 'status error';
+                statusDiv.textContent = error.message;
+            } finally {
+                progressBar.style.display = 'none';
+                if (installLink.textContent) {
+                    navigator.clipboard.writeText(installLink.textContent);
+                    copyNotification.style.display = 'block';
+                    setTimeout(() => {
+                        copyNotification.style.display = 'none';
+                    }, 2000);
+                }
             }
         });
     </script>
