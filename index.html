@@ -333,7 +333,8 @@
             formData.append('p12Password', document.getElementById('p12Password').value);
 
             try {
-                const response = await fetch('/api/sign-ipa', {
+                const response = await fetch('http://localhost:3000/api/sign-ipa', { method: 'POST', body: formData });
+
                     method: 'POST',
                     body: formData
                 });
